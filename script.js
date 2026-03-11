@@ -14,6 +14,169 @@ music.pause();
 });
 
 
+/* SCROLL REVEAL */
+
+const revealGroups = [
+{ selector: ".hero-card", classes: ["reveal-zoom"] },
+{ selector: ".journey-copy", classes: ["reveal-left"] },
+{ selector: ".memory-book-shell", classes: ["reveal-right", "delay-1"] },
+{ selector: ".about-text", classes: ["reveal-left"] },
+{ selector: ".about-image", classes: ["reveal-right", "delay-1"] },
+{ selector: ".gallery-section .section-title", classes: [] },
+{ selector: ".photo-item", classes: ["reveal-zoom"] },
+{ selector: ".wish-card", classes: ["reveal-zoom"] }
+];
+
+function setupScrollReveal(){
+
+document.body.classList.add("is-ready");
+
+revealGroups.forEach(({ selector, classes }) => {
+
+document.querySelectorAll(selector).forEach((element, index) => {
+
+element.classList.add("scroll-reveal", ...classes);
+
+if (selector === ".photo-item") {
+element.classList.add(`delay-${(index % 3) + 1}`);
+}
+
+});
+
+});
+
+const revealItems = document.querySelectorAll(".scroll-reveal");
+
+if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) {
+revealItems.forEach(item => item.classList.add("is-visible"));
+return;
+}
+
+const revealObserver = new IntersectionObserver((entries, observer) => {
+
+entries.forEach(entry => {
+
+if (!entry.isIntersecting) {
+return;
+}
+
+entry.target.classList.add("is-visible");
+observer.unobserve(entry.target);
+
+});
+
+}, {
+threshold: 0.18,
+rootMargin: "0px 0px -8% 0px"
+});
+
+revealItems.forEach(item => revealObserver.observe(item));
+
+}
+
+setupScrollReveal();
+
+
+/* JOURNEY BOOK */
+
+const bookPages = document.querySelectorAll(".book-page");
+const prevPageButton = document.getElementById("bookPrev");
+const nextPageButton = document.getElementById("bookNext");
+const currentPageElement = document.getElementById("bookCurrent");
+const totalPageElement = document.getElementById("bookTotal");
+
+if (bookPages.length && prevPageButton && nextPageButton && currentPageElement && totalPageElement) {
+
+let currentPage = 0;
+let isAnimating = false;
+const totalPages = bookPages.length;
+
+totalPageElement.textContent = totalPages;
+
+function updateBookState(){
+
+currentPageElement.textContent = currentPage + 1;
+prevPageButton.disabled = currentPage === 0 || isAnimating;
+nextPageButton.disabled = currentPage === bookPages.length - 1 || isAnimating;
+
+}
+
+function clearFlipClasses(page){
+page.classList.remove("is-entering-next", "is-entering-prev", "is-leaving-next", "is-leaving-prev");
+}
+
+function goToPage(nextIndex){
+
+if (isAnimating || nextIndex === currentPage || nextIndex < 0 || nextIndex >= bookPages.length) {
+return;
+}
+
+isAnimating = true;
+
+const current = bookPages[currentPage];
+const next = bookPages[nextIndex];
+const isNext = nextIndex > currentPage;
+
+clearFlipClasses(current);
+clearFlipClasses(next);
+
+next.classList.remove("is-active");
+next.classList.add(isNext ? "is-entering-next" : "is-entering-prev");
+
+requestAnimationFrame(() => {
+current.classList.add(isNext ? "is-leaving-next" : "is-leaving-prev");
+next.classList.add("is-active");
+next.classList.remove(isNext ? "is-entering-next" : "is-entering-prev");
+});
+
+setTimeout(() => {
+current.classList.remove("is-active", "is-leaving-next", "is-leaving-prev");
+clearFlipClasses(next);
+
+currentPage = nextIndex;
+isAnimating = false;
+updateBookState();
+}, 860);
+
+updateBookState();
+
+}
+
+function goToNextPage(){
+goToPage(currentPage + 1);
+}
+
+function goToPreviousPage(){
+goToPage(currentPage - 1);
+}
+
+nextPageButton.addEventListener("click", goToNextPage);
+prevPageButton.addEventListener("click", goToPreviousPage);
+
+bookPages.forEach((page, index) => {
+page.classList.remove("is-active", "is-entering-next", "is-entering-prev", "is-leaving-next", "is-leaving-prev");
+if (index === 0) {
+page.classList.add("is-active");
+}
+});
+
+document.addEventListener("keydown", (event) => {
+
+if (event.key === "ArrowRight") {
+goToNextPage();
+}
+
+if (event.key === "ArrowLeft") {
+goToPreviousPage();
+}
+
+});
+
+updateBookState();
+
+}
+
+
 /* FIREWORKS */
 
 const canvas = document.getElementById('fireworks');
@@ -127,6 +290,59 @@ Math.random()*canvas.height*0.7
 
 animate();
 
+
+
+/* COUNTDOWN */
+
+// 👉 Đổi ngày tốt nghiệp tại đây
+const GRADUATION_DATE = new Date('2026-03-28T08:00:00');
+
+function updateCountdown(){
+
+const now = new Date();
+const diff = GRADUATION_DATE - now;
+
+if(diff <= 0){
+document.getElementById('countdownGrid').style.display = 'none';
+document.getElementById('countdownDone').style.display = 'block';
+launchCornerFireworks();
+return;
+}
+
+const days    = Math.floor(diff / (1000*60*60*24));
+const hours   = Math.floor((diff / (1000*60*60)) % 24);
+const minutes = Math.floor((diff / (1000*60)) % 60);
+const seconds = Math.floor((diff / 1000) % 60);
+
+document.getElementById('cdDays').textContent    = String(days).padStart(2,'0');
+document.getElementById('cdHours').textContent   = String(hours).padStart(2,'0');
+document.getElementById('cdMinutes').textContent = String(minutes).padStart(2,'0');
+document.getElementById('cdSeconds').textContent = String(seconds).padStart(2,'0');
+
+}
+
+updateCountdown();
+setInterval(updateCountdown, 1000);
+
+let cornerFireworksActive = false;
+
+function launchCornerFireworks(){
+if(cornerFireworksActive) return;
+cornerFireworksActive = true;
+
+setInterval(()=>{
+
+// Góc dưới trái
+createFirework(canvas.width * 0.05, canvas.height * 0.85);
+createFirework(canvas.width * 0.10, canvas.height * 0.70);
+
+// Góc dưới phải
+createFirework(canvas.width * 0.95, canvas.height * 0.85);
+createFirework(canvas.width * 0.90, canvas.height * 0.70);
+
+},500);
+
+}
 
 
 /* GALLERY MODAL */
